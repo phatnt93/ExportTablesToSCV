@@ -81,10 +81,8 @@ if (!file_exists($outVersionPath)) {
 }
 // Export each table into a file csv
 foreach ($tablesExport as $kte => $vte) {
-    $data = query(
-        $conn,
-        "SELECT * FROM " . $vte . " WHERE 1"
-    );
+    $rowStart = 0;
+    $rowsGet = 1000;
     $cols = query(
         $conn,
         "SHOW COLUMNS from " . $vte
@@ -97,7 +95,15 @@ foreach ($tablesExport as $kte => $vte) {
     }
     // Add col name
     fputcsv($fp, $colArr);
-    if (count($data) > 0) {
+    while (true) {
+        // Get data
+        $data = query(
+            $conn,
+            "SELECT * FROM " . $vte . " WHERE 1 LIMIT " . $rowsGet . " OFFSET " . $rowStart
+        );
+        if (count($data) == 0) {
+            break;
+        }
         foreach ($data as $kda => $vda) {
             $temp = [];
             foreach ($colArr as $kc => $vac) {
@@ -109,6 +115,8 @@ foreach ($tablesExport as $kte => $vte) {
             }
             fputcsv($fp, $temp);
         }
+        $data = null;
+        $rowStart += $rowsGet;
     }
     fclose($fp);
 }
